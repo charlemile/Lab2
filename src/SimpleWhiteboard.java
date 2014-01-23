@@ -29,6 +29,18 @@ class Stroke {
 
 	private AlignedRectangle2D boundingRectangle = new AlignedRectangle2D();
 	private boolean isBoundingRectangleDirty = false;
+	
+	private int associatedUserID;
+	
+	public Stroke(int associatedUserId)
+	{
+		this.associatedUserID = associatedUserId;
+	}
+	
+	public int getAssociatedUserID()
+	{
+		return associatedUserID;
+	}
 
 	public void addPoint( Point2D p ) {
 		points.add( p );
@@ -556,11 +568,15 @@ class UserContext {
 	private Palette palette = new Palette();
 	private CursorContainer cursorContainer = new CursorContainer();
 	private Drawing drawing = null;
+	
+	private int userID;
 
 	private ArrayList< Stroke > selectedStrokes = new ArrayList< Stroke >();
 
-	public UserContext( Drawing d ) {
+	public UserContext( Drawing d,  int id) 
+	{
 		drawing = d;
+		userID = id;
 	}
 
 	public void setPositionOfCenterOfPalette( float x, float y ) {
@@ -936,7 +952,7 @@ class UserContext {
 					cursorIndex = cursorContainer.updateCursorById( id, x, y );
 
 					// Add the newly drawn stroke to the drawing
-					Stroke newStroke = new Stroke();
+					Stroke newStroke = new Stroke(userID);
 					newStroke.setColor( palette.current_red, palette.current_green, palette.current_blue );
 					for ( Point2D p : cursor.getPositions() ) {
 						newStroke.addPoint( gw.convertPixelsToWorldSpaceUnits( p ) );
@@ -997,7 +1013,10 @@ class UserContext {
 						selectedStrokes.clear();
 						for ( Stroke s : drawing.strokes ) {
 							if ( s.isContainedInLassoPolygon( lassoPolygonPoints ) )
-								selectedStrokes.add( s );
+							{
+								if(s.getAssociatedUserID() == userID)
+									selectedStrokes.add( s );
+							}
 						}
 					}
 					else {
@@ -1106,7 +1125,7 @@ public class SimpleWhiteboard implements Runnable, ActionListener {
 
 		userContexts = new UserContext[ Constant.NUM_USERS ];
 		for ( int j = 0; j < Constant.NUM_USERS; ++j ) {
-			userContexts[j] = new UserContext( drawing );
+			userContexts[j] = new UserContext( drawing, j );
 		}
 		// initialize the positions of the palettes
 		if ( Constant.NUM_USERS == 1 ) {
