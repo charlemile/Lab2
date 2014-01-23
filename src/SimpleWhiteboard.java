@@ -384,6 +384,7 @@ class Palette {
 	public float current_blue = 0;
 	
 	public boolean minimize;
+	public String tooltip;
 
 	public Palette() {
 		final int W = Constant.BUTTON_WIDTH;
@@ -492,6 +493,9 @@ class Palette {
 			newWidth = Constant.BUTTON_WIDTH / 2;
 		}
 		
+		gw.drawRect( x0, y0 - height / 4, newWidth, height / 4 );
+		gw.drawString( x0 + 10, y0 - height / 4 + Constant.TEXT_HEIGHT * 2, tooltip );
+		
 		gw.drawRect( x0, y0, newWidth, height );
 
 		for ( PaletteButton b : buttons ) {
@@ -535,6 +539,14 @@ class Palette {
 			
 			setMinimize(false);
 		}
+	}
+	
+	public void displayButtonText(int indexOfButton){
+		tooltip = buttons.get(indexOfButton).tooltip;
+	}
+	
+	public void hideButtonText(){
+		tooltip = "";
 	}
 }
 
@@ -651,7 +663,7 @@ class UserContext {
 		int cursorIndex = cursorContainer.findIndexOfCursorById( id );
 		MyCursor cursor = (cursorIndex==-1) ? null : cursorContainer.getCursorByIndex( cursorIndex );
 
-
+		palette.hideButtonText();
 		if ( cursor == null ) {
 
 			if ( type == MultitouchFramework.TOUCH_EVENT_UP ) {
@@ -663,7 +675,7 @@ class UserContext {
 			// In other words, this is a new finger touching the screen.
 			// The event is probably of type TOUCH_EVENT_DOWN.
 			// A new cursor will need to be created for the event.
-
+			
 			if ( palette.contains( x, y ) ) {
 				// The event occurred inside the palette.
 
@@ -674,6 +686,8 @@ class UserContext {
 					// We branch according to the button under the event.
 					//
 					int indexOfButton = palette.indexOfButtonContainingTheGivenPoint( x, y );
+					
+					palette.displayButtonText(indexOfButton);
 					
 					if (indexOfButton == palette.minimize_buttonIndex) {
 						if(!palette.isMinimize()){
@@ -930,6 +944,7 @@ class UserContext {
 					drawing.addStroke( newStroke );
 
 					cursorContainer.removeCursorByIndex( cursorIndex );
+					
 				}
 				else {
 					// drag event; just update the cursor with the new position
