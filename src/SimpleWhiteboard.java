@@ -1,6 +1,5 @@
 
 import java.util.ArrayList;
-
 import java.awt.Color;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
@@ -15,6 +14,7 @@ import javax.swing.JCheckBox;
 import javax.swing.JPanel;
 //import javax.swing.SwingUtilities;
 import javax.swing.BoxLayout;
+import javax.swing.undo.UndoableEdit;
 
 
 
@@ -94,21 +94,43 @@ class Stroke {
 class Drawing {
 
 	public ArrayList< Stroke > strokes = new ArrayList< Stroke >();
+	public int indexStrokes = 0 ;
 
 	private AlignedRectangle2D boundingRectangle = new AlignedRectangle2D();
 	private boolean isBoundingRectangleDirty = false;
 
 	public void addStroke( Stroke s ) {
+		int lenght = strokes.size()-1;
+		for(int i =lenght ; i>= indexStrokes; i--){
+			strokes.remove(i);
+		}
+		indexStrokes+=1;
 		strokes.add( s );
 		isBoundingRectangleDirty = true;
+	}
+	
+	
+	public void undo(){
+		if(indexStrokes >0){
+			indexStrokes -=1;
+		}
+	}
+	public void redo(){
+		if(indexStrokes < strokes.size() ){
+			indexStrokes+=1;
+		}
+		
 	}
 
 	public AlignedRectangle2D getBoundingRectangle() {
 		if ( isBoundingRectangleDirty ) {
 			boundingRectangle.clear();
-			for ( Stroke s : strokes ) {
-				boundingRectangle.bound( s.getBoundingRectangle() );
+			for (int i =0; i< indexStrokes ; i++){
+				boundingRectangle.bound( strokes.get(i).getBoundingRectangle() );
 			}
+//			for ( Stroke s : strokes ) {
+//				boundingRectangle.bound( s.getBoundingRectangle() );
+//			}
 			isBoundingRectangleDirty = false;
 		}
 		return boundingRectangle;
@@ -119,9 +141,12 @@ class Drawing {
 
 	public void draw( GraphicsWrapper gw ) {
 		gw.setLineWidth( 5 );
-		for ( Stroke s : strokes ) {
-			s.draw( gw );
+		for(int i =0 ; i <indexStrokes; i++){
+			strokes.get(i).draw(gw);
 		}
+//		for ( Stroke s : strokes ) {
+//			s.draw( gw );
+//		}
 		gw.setLineWidth( 1 );
 	}
 
@@ -386,6 +411,8 @@ class Palette {
 	public int horizFlip_buttonIndex;
 	public int verticalFlip_buttonIndex;
 	public int frameAll_buttonIndex;
+	public int undo_buttonIndex;
+	public int redo_buttonIndex;
 
 
 	public int currentlyActiveModalButton; // could be equal to any of ink_buttonIndex, select_buttonIndex, manipulate_buttonIndex, camera_buttonIndex
@@ -428,6 +455,14 @@ class Palette {
 
 		b = new PaletteButton( 5*W - W / 2, 0, "Camera", "When active, use one or two other fingers to directly manipulate the camera.", true, W, H);
 		camera_buttonIndex = buttons.size();
+		buttons.add( b );
+		
+		b = new PaletteButton( 5*W, 0, "undo", "do an undo", true );
+		undo_buttonIndex = buttons.size();
+		buttons.add( b );
+		
+		b = new PaletteButton( 6*W, 0, "redo", "do an redo", true );
+		redo_buttonIndex = buttons.size();
 		buttons.add( b );
 
 
@@ -818,6 +853,28 @@ class UserContext {
 
 						// Frame the entire drawing
 						gw.frame( drawing.getBoundingRectangle(), true );
+					}
+					else if ( indexOfButton == palette.undo_buttonIndex ) {
+						palette.buttons.get( indexOfButton ).isPressed = true;
+
+						// Cause a new cursor to be created to keep track of this event id in the future
+						cursorIndex = cursorContainer.updateCursorById( id, x, y );
+						cursor = cursorContainer.getCursorByIndex( cursorIndex );
+					    drawing.undo();
+						
+						
+						drawing.markBoundingRectangleDirty();
+					}
+					else if ( indexOfButton == palette.redo_buttonIndex ) {
+						palette.buttons.get( indexOfButton ).isPressed = true;
+
+						// Cause a new cursor to be created to keep track of this event id in the future
+						cursorIndex = cursorContainer.updateCursorById( id, x, y );
+						cursor = cursorContainer.getCursorByIndex( cursorIndex );
+					    drawing.redo();
+						
+						
+						drawing.markBoundingRectangleDirty();
 					}
 					else {
 						// The event occurred on some part of the palette where there are no buttons.
