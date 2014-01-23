@@ -372,6 +372,7 @@ class Palette {
 	public int red_buttonIndex;
 	public int green_buttonIndex;
 	public int horizFlip_buttonIndex;
+	public int verticalFlip_buttonIndex;
 	public int frameAll_buttonIndex;
 
 
@@ -385,7 +386,6 @@ class Palette {
 	public boolean minimize;
 
 	public Palette() {
-		setMinimize(false);
 		final int W = Constant.BUTTON_WIDTH;
 		final int H = Constant.BUTTON_HEIGHT;
 		PaletteButton b = null;
@@ -438,6 +438,10 @@ class Palette {
 
 		b = new PaletteButton( 5*W - W / 2, H, "Frame all", "Frames the entire drawing.", false, W, H);
 		frameAll_buttonIndex = buttons.size();
+		buttons.add( b );
+		
+		b = new PaletteButton( 6*W - W / 2, H, "Ver. Flip", "Flip the selection verticaly (around a vertical axis).", false, W, H);
+		verticalFlip_buttonIndex = buttons.size();
 		buttons.add( b );
 
 
@@ -749,6 +753,26 @@ class UserContext {
 							Point2D center = s.getBoundingRectangle().getCenter();
 							for ( Point2D p : s.getPoints() ) {
 								p.copy( center.x() - (p.x()-center.x()), p.y() );
+								//vertical
+								//p.copy(p.x(),center.y() - (p.y()-center.y()) );
+							}
+							s.markBoundingRectangleDirty();
+						}
+						drawing.markBoundingRectangleDirty();
+					}
+					else if ( indexOfButton == palette.verticalFlip_buttonIndex ) {
+						palette.buttons.get( indexOfButton ).isPressed = true;
+
+						// Cause a new cursor to be created to keep track of this event id in the future
+						cursorIndex = cursorContainer.updateCursorById( id, x, y );
+						cursor = cursorContainer.getCursorByIndex( cursorIndex );
+						cursor.setType( MyCursor.TYPE_INTERACTING_WITH_WIDGET, indexOfButton );
+
+						// Flip the selected strokes horizontally (around a vertical axis)
+						for ( Stroke s : selectedStrokes ) {
+							Point2D center = s.getBoundingRectangle().getCenter();
+							for ( Point2D p : s.getPoints() ) {
+								p.copy(p.x(),center.y() - (p.y()-center.y()) );
 							}
 							s.markBoundingRectangleDirty();
 						}
