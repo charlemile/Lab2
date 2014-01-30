@@ -615,6 +615,11 @@ class UserContext {
 		drawing = d;
 		userID = id;
 	}
+	
+	public ArrayList< Stroke > getSelectedStrokes()
+	{
+		return selectedStrokes;
+	}
 
 	public void setPositionOfCenterOfPalette( float x, float y ) {
 		palette.x0 = Math.round( x - palette.width/2 );
@@ -716,8 +721,9 @@ class UserContext {
 		int cursorIndex = cursorContainer.findIndexOfCursorById( id );
 		MyCursor cursor = (cursorIndex==-1) ? null : cursorContainer.getCursorByIndex( cursorIndex );
 
-		palette.hideButtonText();
+		
 		if ( cursor == null ) {
+			palette.hideButtonText();
 
 			if ( type == MultitouchFramework.TOUCH_EVENT_UP ) {
 				// This should never happen, but if it does, just ignore the event.
@@ -728,8 +734,8 @@ class UserContext {
 			// In other words, this is a new finger touching the screen.
 			// The event is probably of type TOUCH_EVENT_DOWN.
 			// A new cursor will need to be created for the event.
-			
-			if ( palette.contains( x, y ) ) {
+			int indexOfButton = palette.indexOfButtonContainingTheGivenPoint( x, y );
+			if ( palette.contains( x, y ) && indexOfButton != -1 && palette.buttons.get(indexOfButton).isVisible ) {
 				// The event occurred inside the palette.
 
 				if ( cursorContainer.getNumCursors() == 0 ) {
@@ -737,8 +743,6 @@ class UserContext {
 					// In other words, this new finger is the only finger for the user context.
 					// So, we allow the event for the new finger to activate a button in the palette.
 					// We branch according to the button under the event.
-					//
-					int indexOfButton = palette.indexOfButtonContainingTheGivenPoint( x, y );
 					
 					palette.displayButtonText(indexOfButton);
 					
@@ -862,8 +866,11 @@ class UserContext {
 						// Cause a new cursor to be created to keep track of this event id in the future
 						cursorIndex = cursorContainer.updateCursorById( id, x, y );
 						cursor = cursorContainer.getCursorByIndex( cursorIndex );
-						selectedStrokes.clear();
-					    drawing.undo();
+						
+						for(int i = 0; i<SimpleWhiteboard.static_userContexts.length; i++)
+							SimpleWhiteboard.static_userContexts[i].getSelectedStrokes().clear();
+					    
+						drawing.undo();
 						
 					    palette.buttons.get( indexOfButton ).isPressed = false;
 						drawing.markBoundingRectangleDirty();
@@ -991,6 +998,7 @@ class UserContext {
 				if ( type == MultitouchFramework.TOUCH_EVENT_UP ) {
 					// The user lifted their finger off of a palette button.
 					cursorContainer.removeCursorByIndex( cursorIndex );
+					palette.hideButtonText();
 
 					if ( ! palette.buttons.get( cursor.indexOfButton ).isSticky ) {
 						palette.buttons.get( cursor.indexOfButton ).isPressed = false;
@@ -1161,8 +1169,11 @@ class UserContext {
 }
 
 
-public class SimpleWhiteboard implements Runnable, ActionListener {
-
+public class SimpleWhiteboard implements Runnable, ActionListener 
+{
+	
+	static UserContext [] static_userContexts = null;
+	
 	public MultitouchFramework multitouchFramework = null;
 	public GraphicsWrapper gw = null;
 	JMenuItem testMenuItem1;
@@ -1208,6 +1219,8 @@ public class SimpleWhiteboard implements Runnable, ActionListener {
 		gw.setFontHeight( Constant.TEXT_HEIGHT );
 
 		gw.frame( new AlignedRectangle2D( new Point2D(-100,-100), new Point2D(100,100) ), true );
+		
+		SimpleWhiteboard.static_userContexts = userContexts;
 	}
 
 	public void actionPerformed(ActionEvent e) {
