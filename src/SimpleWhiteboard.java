@@ -110,9 +110,11 @@ class Drawing {
 	}
 	
 	
-	public void undo(){
-		if(indexStrokes >0){
-			indexStrokes -=1;
+	public void undo()
+	{
+		if(indexStrokes > 0)
+		{
+			indexStrokes -= 1;
 		}
 	}
 	public void redo(){
@@ -457,11 +459,11 @@ class Palette {
 		camera_buttonIndex = buttons.size();
 		buttons.add( b );
 		
-		b = new PaletteButton( 5*W, 0, "undo", "do an undo", true );
+		b = new PaletteButton( 6*W - W / 2, 0, "undo", "do an undo", true, W, H );
 		undo_buttonIndex = buttons.size();
 		buttons.add( b );
 		
-		b = new PaletteButton( 6*W, 0, "redo", "do an redo", true );
+		b = new PaletteButton( 7*W - W / 2, 0, "redo", "do an redo", true, W, H  );
 		redo_buttonIndex = buttons.size();
 		buttons.add( b );
 
@@ -860,9 +862,10 @@ class UserContext {
 						// Cause a new cursor to be created to keep track of this event id in the future
 						cursorIndex = cursorContainer.updateCursorById( id, x, y );
 						cursor = cursorContainer.getCursorByIndex( cursorIndex );
+						selectedStrokes.clear();
 					    drawing.undo();
 						
-						
+					    palette.buttons.get( indexOfButton ).isPressed = false;
 						drawing.markBoundingRectangleDirty();
 					}
 					else if ( indexOfButton == palette.redo_buttonIndex ) {
@@ -873,7 +876,8 @@ class UserContext {
 						cursor = cursorContainer.getCursorByIndex( cursorIndex );
 					    drawing.redo();
 						
-						
+					    palette.buttons.get( indexOfButton ).isPressed = false;
+					    
 						drawing.markBoundingRectangleDirty();
 					}
 					else {
@@ -1087,7 +1091,8 @@ class UserContext {
 						selectedStrokes.clear();
 						for ( Stroke s : drawing.strokes ) {
 							if ( s.isContainedInRectangle( selectedRectangle ) )
-								selectedStrokes.add( s );
+								if(s.getAssociatedUserID() == userID)
+									selectedStrokes.add( s );
 						}
 					}
 
